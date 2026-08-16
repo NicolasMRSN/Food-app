@@ -15,24 +15,78 @@ const UNIT_TO_G: Record<string, number> = {
   pincée: 1, pincées: 1,
 };
 
+
+// Poids moyens (g) pour les ingrédients exprimés "à la pièce" — ordre important
+const PIECE_WEIGHTS: Array<[RegExp, number]> = [
+  [/pomme[s]? de terre/, 150],
+  [/jaune[s]? d'?oeuf/, 20],
+  [/blanc[s]? d'?oeuf/, 35],
+  [/oeuf|œuf/, 55],
+  [/gousse|ail/, 5],
+  [/echalote|échalote/, 25],
+  [/oignon/, 80],
+  [/tomate[s]? cerise/, 15],
+  [/tomate/, 120],
+  [/courgette/, 250],
+  [/aubergine/, 250],
+  [/poivron/, 150],
+  [/carotte/, 125],
+  [/citron vert/, 80],
+  [/citron/, 100],
+  [/orange/, 150],
+  [/pomme/, 150],
+  [/banane/, 120],
+  [/concombre/, 300],
+  [/poireau/, 150],
+  [/champignon/, 20],
+  [/salade|laitue/, 300],
+  [/avocat/, 150],
+  [/yaourt/, 125],
+  [/escalope|steak|pav[eé]/, 125],
+  [/filet/, 130],
+  [/cuisse/, 250],
+  [/saucisse/, 100],
+  [/tranche[s]? de jambon/, 45],
+  [/tranche/, 30],
+  [/baguette/, 250],
+  [/cube|bouillon/, 10],
+  [/sachet/, 10],
+  [/feuille|brin|branche/, 2],
+];
+
+function pieceGrams(label: string, qty: number): number {
+  const l = label.toLowerCase();
+  for (const [re, w] of PIECE_WEIGHTS) if (re.test(l)) return Math.round(qty * w);
+  return Math.round(qty * 100); // pièce inconnue : 100 g/pièce, corrigible en édition
+}
+
+const UNITS_SORTED = Object.entries(UNIT_TO_G).sort((a, b) => b[0].length - a[0].length);
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const stripDe = (s: string) => s.replace(/^(?:de\s+|d')\s*/i, "").trim();
+
 function parseIngredient(raw: string) {
   const txt = raw.replace(/\s+/g, " ").trim();
-  // Formes : "200 g de farine", "2 cuillères à soupe d'huile", "3 œufs"
-  const m = txt.match(/^([\d.,/]+)\s*([a-zA-Zàâéèêîôûç.\s]*?)\s*(?:de\s+|d')?(.+)$/i);
-  let grams: number | null = null;
-  let label = txt;
-  if (m) {
-    let qty = m[1].includes("/")
-      ? Number(m[1].split("/")[0]) / Number(m[1].split("/")[1])
-      : Number(m[1].replace(",", "."));
-    const unit = m[2].trim().toLowerCase();
-    label = m[3].trim();
-    if (!Number.isNaN(qty)) {
-      if (unit && UNIT_TO_G[unit] != null) grams = Math.round(qty * UNIT_TO_G[unit]);
-      else if (!unit) grams = null; // pièces ("3 œufs") : grammage à préciser par l'utilisateur
+  // Formes : "200 g de farine", "2 cuilleres a soupe d'huile", "3 oeufs", "sel"
+  const m = txt.match(/^([\d.,/]+)\s*(.*)$/);
+  if (!m) return { raw: txt, label: txt, grams: 10 };
+  const qty = m[1].includes("/")
+    ? Number(m[1].split("/")[0]) / Number(m[1].split("/")[1])
+    : Number(m[1].replace(",", "."));
+  const rest = m[2].trim();
+  if (Number.isNaN(qty) || !rest) return { raw: txt, label: rest || txt, grams: 10 };
+
+  // Unite explicite en prefixe (la plus longue d'abord : "cuilleres a soupe" avant "l")
+  for (const [unit, factor] of UNITS_SORTED) {
+    const re = new RegExp("^" + escapeRe(unit) + "(?:\\s+|$)", "i");
+    const hit = rest.match(re);
+    if (hit) {
+      const label = stripDe(rest.slice(hit[0].length)) || rest;
+      return { raw: txt, label, grams: Math.round(qty * factor) };
     }
   }
-  return { raw: txt, label, grams };
+  // Pas d'unite : quantite "a la piece" ("3 oeufs", "2 gousses d'ail")
+  const label = stripDe(rest);
+  return { raw: txt, label, grams: pieceGrams(label, qty) };
 }
 
 function firstRecipe(node: unknown): Record<string, unknown> | null {

@@ -53,18 +53,25 @@ export default function RecipeForm({ recipe, onClose, onSaved }) {
       if (data.instructions) setInstructions(data.instructions);
       setSourceUrl(importUrl.trim());
       if (data.ingredients?.length) {
+        // Association automatique de chaque ingrédient à sa référence CIQUAL
+        const labels = data.ingredients.map((t) => t.raw);
+        const { data: matches } = await supabase.rpc("match_ciqual", { labels });
+        const byLabel = Object.fromEntries((matches || []).map((m) => [m.label, m]));
         setIngs(
-          data.ingredients.map((t) => ({
-            ciqual_code: null,
-            label: t.label,
-            quantity_g: t.grams || "",
-            food: null,
-            hint: t.raw,
-          }))
+          data.ingredients.map((t) => {
+            const m = byLabel[t.raw];
+            return {
+              ciqual_code: m?.ciqual_code ?? null,
+              label: m?.name_fr ?? t.label,
+              quantity_g: t.grams || 100,
+              food: m ? { ciqual_code: m.ciqual_code, name_fr: m.name_fr } : null,
+              hint: t.raw,
+            };
+          })
         );
         setMsg({
           ok: true,
-          text: "Recette importée. Associez chaque ingrédient à sa référence CIQUAL pour activer les calculs nutritionnels.",
+          text: "Recette importée : ingrédients associés automatiquement à CIQUAL et quantités estimées. Enregistrez, puis corrigez en édition si besoin.",
         });
       }
     } catch (e) {
@@ -178,8 +185,8 @@ export default function RecipeForm({ recipe, onClose, onSaved }) {
                     value={ing.food?.name_fr || ing.label}
                     onSelect={(f) => setIng(i, { ciqual_code: f.ciqual_code, food: f, label: f.name_fr })}
                   />
-                  {ing.hint && !ing.ciqual_code && (
-                    <span className="muted">Importé : « {ing.hint} » — sélectionnez l'équivalent CIQUAL</span>
+                  {ing.hint && (
+                    <span className="muted">Importé : « {ing.hint} »{!ing.ciqual_code && " — sélectionnez l'équivalent CIQUAL"}</span>
                   )}
                 </div>
                 <input
