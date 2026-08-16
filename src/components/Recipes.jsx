@@ -60,10 +60,13 @@ function RecipeDetail({ recipe, foodsByCode, onClose, onEdit }) {
   );
 }
 
+const GRID_PER_PAGE = 24;
+
 export default function Recipes({ recipes, foodsByCode, reload }) {
   const [cat, setCat] = useState("");
   const [season, setSeason] = useState(currentSeason());
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
   const [form, setForm] = useState(null); // null | {} | recipe
   const [detail, setDetail] = useState(null);
 
@@ -73,17 +76,20 @@ export default function Recipes({ recipes, foodsByCode, reload }) {
       (!season || r.season === season || r.season === "Toute l'année") &&
       (!search || r.name.toLowerCase().includes(search.toLowerCase()))
   );
+  const maxPage = Math.max(0, Math.ceil(list.length / GRID_PER_PAGE) - 1);
+  const cur = Math.min(page, maxPage);
+  const pageItems = list.slice(cur * GRID_PER_PAGE, (cur + 1) * GRID_PER_PAGE);
 
   return (
     <div className="panel">
       <div className="row spread">
         <div className="row">
-          <input placeholder="Rechercher…" value={search} onChange={(e) => setSearch(e.target.value)} />
-          <select value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Type">
+          <input placeholder="Rechercher (optionnel)…" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} />
+          <select value={cat} onChange={(e) => { setCat(e.target.value); setPage(0); }} aria-label="Type">
             <option value="">Tous les types</option>
             {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
           </select>
-          <select value={season} onChange={(e) => setSeason(e.target.value)} aria-label="Saison">
+          <select value={season} onChange={(e) => { setSeason(e.target.value); setPage(0); }} aria-label="Saison">
             <option value="">Toutes saisons</option>
             {SEASONS.filter((s) => s !== "Toute l'année").map((s) => <option key={s}>{s}</option>)}
           </select>
@@ -92,7 +98,7 @@ export default function Recipes({ recipes, foodsByCode, reload }) {
       </div>
 
       <div className="recipes-grid">
-        {list.map((r) => (
+        {pageItems.map((r) => (
           <article key={r.id} className="recipe-card">
             <Thumb recipe={r} />
             <div className="body">
@@ -114,6 +120,14 @@ export default function Recipes({ recipes, foodsByCode, reload }) {
           <p className="muted">Aucune recette ne correspond. Ajoutez-en une avec « + Recette ».</p>
         )}
       </div>
+
+      {list.length > GRID_PER_PAGE && (
+        <div className="pager" style={{ marginTop: "1rem" }}>
+          <button type="button" disabled={cur === 0} onClick={() => setPage(cur - 1)} aria-label="Page précédente">‹ Précédent</button>
+          <span>Page {cur + 1}/{maxPage + 1} · {list.length} recettes</span>
+          <button type="button" disabled={cur === maxPage} onClick={() => setPage(cur + 1)} aria-label="Page suivante">Suivant ›</button>
+        </div>
+      )}
 
       {form && (
         <RecipeForm

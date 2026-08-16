@@ -130,3 +130,9 @@ table.nutri th:first-child, table.nutri td:first-child { text-align: left; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* Pagination */
+.pager { display: flex; align-items: center; justify-content: center; gap: 0.6rem; padding: 0.45rem; font-size: 0.8rem; color: var(--ink-soft); border-top: 1px solid var(--line); }
+.pager button { padding: 0.2rem 0.6rem; border-radius: 6px; }
+.recipes-grid + .pager, .panel .pager { border-top: none; }
+.suggestions .pager { position: sticky; bottom: 0; background: var(--card); }
