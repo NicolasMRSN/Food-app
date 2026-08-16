@@ -68,12 +68,12 @@ function parseIngredient(raw: string) {
   const txt = raw.replace(/\s+/g, " ").trim();
   // Formes : "200 g de farine", "2 cuilleres a soupe d'huile", "3 oeufs", "sel"
   const m = txt.match(/^([\d.,/]+)\s*(.*)$/);
-  if (!m) return { raw: txt, label: txt, grams: 10 };
+  if (!m) return { raw: txt, label: txt, grams: 10, pieces: null };
   const qty = m[1].includes("/")
     ? Number(m[1].split("/")[0]) / Number(m[1].split("/")[1])
     : Number(m[1].replace(",", "."));
   const rest = m[2].trim();
-  if (Number.isNaN(qty) || !rest) return { raw: txt, label: rest || txt, grams: 10 };
+  if (Number.isNaN(qty) || !rest) return { raw: txt, label: rest || txt, grams: 10, pieces: null };
 
   // Unite explicite en prefixe (la plus longue d'abord : "cuilleres a soupe" avant "l")
   for (const [unit, factor] of UNITS_SORTED) {
@@ -81,12 +81,12 @@ function parseIngredient(raw: string) {
     const hit = rest.match(re);
     if (hit) {
       const label = stripDe(rest.slice(hit[0].length)) || rest;
-      return { raw: txt, label, grams: Math.round(qty * factor) };
+      return { raw: txt, label, grams: Math.round(qty * factor), pieces: null };
     }
   }
   // Pas d'unite : quantite "a la piece" ("3 oeufs", "2 gousses d'ail")
   const label = stripDe(rest);
-  return { raw: txt, label, grams: pieceGrams(label, qty) };
+  return { raw: txt, label, grams: pieceGrams(label, qty), pieces: qty };
 }
 
 function firstRecipe(node: unknown): Record<string, unknown> | null {

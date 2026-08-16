@@ -21,7 +21,7 @@ export default function App() {
   const [recipes, setRecipes] = useState([]);
   const [meals, setMeals] = useState([]);
   const [foodsByCode, setFoodsByCode] = useState({});
-  const [profiles, setProfiles] = useState([]);
+  const [people, setPeople] = useState([]);
   const [wheySettings, setWheySettings] = useState(null);
 
   useEffect(() => {
@@ -60,10 +60,10 @@ export default function App() {
 
   const loadSettings = useCallback(async () => {
     const [{ data: p }, { data: s }] = await Promise.all([
-      supabase.from("profiles").select("*").order("display_name"),
+      supabase.from("people").select("*").order("sort"),
       supabase.from("app_settings").select("value").eq("key", "whey_nutripure").maybeSingle(),
     ]);
-    setProfiles(p || []);
+    setPeople(p || []);
     setWheySettings(s?.value || null);
   }, []);
 
@@ -100,7 +100,7 @@ export default function App() {
       )}
       {tab === "recettes" && <Recipes recipes={recipes} foodsByCode={foodsByCode} reload={loadRecipes} />}
       {tab === "rapport" && (
-        <Report weekStart={weekStart} recipes={recipes} meals={meals} foodsByCode={foodsByCode} profiles={profiles} wheySettings={wheySettings} reloadSettings={loadSettings} />
+        <Report weekStart={weekStart} recipes={recipes} meals={meals} foodsByCode={foodsByCode} people={people} wheySettings={wheySettings} reloadSettings={loadSettings} />
       )}
       {tab === "courses" && <Shopping weekStart={weekStart} recipes={recipes} meals={meals} foodsByCode={foodsByCode} />}
     </div>

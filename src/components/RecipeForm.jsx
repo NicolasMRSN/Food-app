@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabase";
 import { CATEGORIES, SEASONS, ALLERGENS } from "../lib/constants";
 import FoodAutocomplete from "./FoodAutocomplete";
 
-const emptyIng = () => ({ ciqual_code: null, label: "", quantity_g: "", food: null });
+const emptyIng = () => ({ ciqual_code: null, label: "", quantity_g: "", pieces: "", food: null });
 
 export default function RecipeForm({ recipe, onClose, onSaved }) {
   const editing = Boolean(recipe?.id);
@@ -21,6 +21,7 @@ export default function RecipeForm({ recipe, onClose, onSaved }) {
           ciqual_code: i.ciqual_code,
           label: i.label,
           quantity_g: i.quantity_g,
+          pieces: i.pieces ?? "",
           food: { ciqual_code: i.ciqual_code, name_fr: i.label },
         }))
       : [emptyIng()]
@@ -64,6 +65,7 @@ export default function RecipeForm({ recipe, onClose, onSaved }) {
               ciqual_code: m?.ciqual_code ?? null,
               label: m?.name_fr ?? t.label,
               quantity_g: t.grams || 100,
+              pieces: t.pieces ?? "",
               food: m ? { ciqual_code: m.ciqual_code, name_fr: m.name_fr } : null,
               hint: t.raw,
             };
@@ -115,6 +117,7 @@ export default function RecipeForm({ recipe, onClose, onSaved }) {
             ciqual_code: i.ciqual_code,
             label: i.food?.name_fr || i.label,
             quantity_g: Number(i.quantity_g),
+            pieces: i.pieces ? Number(i.pieces) : null,
           }))
         );
         if (error) throw error;
@@ -177,7 +180,7 @@ export default function RecipeForm({ recipe, onClose, onSaved }) {
           </div>
 
           <div>
-            <label>Ingrédients (quantités pour 2 personnes, en grammes)</label>
+            <label>Ingrédients pour 2 personnes — pièces (optionnel) et grammes</label>
             {ings.map((ing, i) => (
               <div className="ing-row" key={i}>
                 <div>
@@ -191,11 +194,22 @@ export default function RecipeForm({ recipe, onClose, onSaved }) {
                 </div>
                 <input
                   type="number"
+                  min="0"
+                  step="0.5"
+                  placeholder="pcs"
+                  value={ing.pieces}
+                  onChange={(e) => setIng(i, { pieces: e.target.value })}
+                  aria-label="Nombre de pièces (optionnel)"
+                  title="Nombre de pièces (optionnel)"
+                />
+                <input
+                  type="number"
                   min="1"
                   placeholder="g"
                   value={ing.quantity_g}
                   onChange={(e) => setIng(i, { quantity_g: e.target.value })}
                   aria-label="Quantité en grammes"
+                  title="Quantité en grammes"
                 />
                 <button type="button" className="ghost" onClick={() => setIngs((a) => a.filter((_, k) => k !== i))} aria-label="Retirer">✕</button>
               </div>

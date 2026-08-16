@@ -19,9 +19,10 @@ export default function Shopping({ weekStart, recipes, meals, foodsByCode }) {
         const key = ing.ciqual_code;
         if (!acc[key]) {
           const food = foodsByCode[key];
-          acc[key] = { ciqual_code: key, label: ing.label, aisle: food?.aisle || "Épicerie salée", grams: 0 };
+          acc[key] = { ciqual_code: key, label: ing.label, aisle: food?.aisle || "Épicerie salée", grams: 0, pieces: 0 };
         }
         acc[key].grams += (ing.quantity_g || 0) * factor;
+        if (ing.pieces) acc[key].pieces += Number(ing.pieces) * factor;
       }
     }
     return Object.values(acc);
@@ -70,7 +71,11 @@ export default function Shopping({ weekStart, recipes, meals, foodsByCode }) {
                   onChange={() => toggle(it)}
                 />
                 <span className="txt">{it.label}</span>
-                <span className="qty">{fmtQty(it.grams)}</span>
+                <span className="qty">
+                  {it.pieces > 0
+                    ? `${Math.ceil(it.pieces)} pc${Math.ceil(it.pieces) > 1 ? "s" : ""} · ${fmtQty(it.grams)}`
+                    : fmtQty(it.grams)}
+                </span>
               </label>
             ))}
         </section>

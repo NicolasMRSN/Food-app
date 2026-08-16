@@ -34,7 +34,7 @@ function RecipeDetail({ recipe, foodsByCode, onClose, onEdit }) {
         <h3>Ingrédients (2 personnes)</h3>
         <ul>
           {(recipe.recipe_ingredients || []).map((i) => (
-            <li key={i.id || i.label}>{i.label} — {i.quantity_g} g</li>
+            <li key={i.id || i.label}>{i.label} — {i.pieces ? `${i.pieces} pièce${i.pieces > 1 ? "s" : ""} (${i.quantity_g} g)` : `${i.quantity_g} g`}</li>
           ))}
         </ul>
         {recipe.utensils?.length > 0 && (
