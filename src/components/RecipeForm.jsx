@@ -58,6 +58,12 @@ export default function RecipeForm({ recipe, onClose, onSaved }) {
         const labels = data.ingredients.map((t) => t.raw);
         const { data: matches } = await supabase.rpc("match_ciqual", { labels });
         const byLabel = Object.fromEntries((matches || []).map((m) => [m.label, m]));
+        // Détection automatique des allergènes (14 allergènes UE) à partir des ingrédients associés
+        const codes = [...new Set((matches || []).map((m) => m.ciqual_code).filter(Boolean))];
+        if (codes.length) {
+          const { data: detected } = await supabase.rpc("allergens_for", { codes });
+          setAllergens(detected || []);
+        }
         setIngs(
           data.ingredients.map((t) => {
             const m = byLabel[t.raw];
@@ -73,7 +79,7 @@ export default function RecipeForm({ recipe, onClose, onSaved }) {
         );
         setMsg({
           ok: true,
-          text: "Recette importée : ingrédients associés automatiquement à CIQUAL et quantités estimées. Enregistrez, puis corrigez en édition si besoin.",
+          text: "Recette importée : ingrédients associés à CIQUAL, quantités estimées et allergènes détectés automatiquement. Enregistrez, puis corrigez en édition si besoin.",
         });
       }
     } catch (e) {

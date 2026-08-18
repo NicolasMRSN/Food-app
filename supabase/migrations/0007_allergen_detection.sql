@@ -1,0 +1,6 @@
+-- Détection des 14 allergènes UE au niveau de chaque aliment CIQUAL
+-- (règles sur noms/groupes/sous-groupes, insensibles aux accents) :
+-- colonne ciqual_foods.allergens + fonction compute_allergens(name, grp, sgrp)
+-- + fonction allergens_for(codes int[]) agrégeant les allergènes d'une liste
+-- d'ingrédients, appelée par le formulaire à l'import d'une recette.
+-- Voir la migration appliquée "allergen_detection" pour le SQL complet.
