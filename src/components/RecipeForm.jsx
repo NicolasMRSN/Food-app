@@ -15,6 +15,7 @@ export default function RecipeForm({ recipe, onClose, onSaved }) {
   const [utensils, setUtensils] = useState((recipe?.utensils || []).join(", "));
   const [allergens, setAllergens] = useState(recipe?.allergens || []);
   const [sourceUrl, setSourceUrl] = useState(recipe?.source_url || "");
+  const [servingsBase, setServingsBase] = useState(recipe?.servings_base || 2);
   const [ings, setIngs] = useState(
     recipe?.recipe_ingredients?.length
       ? recipe.recipe_ingredients.map((i) => ({
@@ -38,6 +39,21 @@ export default function RecipeForm({ recipe, onClose, onSaved }) {
     setAllergens((l) => (l.includes(a) ? l.filter((x) => x !== a) : [...l, a]));
   }
 
+  // Changer le nombre de personnes rescale proportionnellement toutes les quantités
+  function changeServings(next) {
+    const v = Math.max(1, Math.min(50, Number(next) || 1));
+    if (v === servingsBase) return;
+    const factor = v / servingsBase;
+    setIngs((arr) =>
+      arr.map((i) => ({
+        ...i,
+        quantity_g: i.quantity_g ? Math.max(1, Math.round(Number(i.quantity_g) * factor)) : i.quantity_g,
+        pieces: i.pieces ? Math.round(Number(i.pieces) * factor * 2) / 2 : i.pieces,
+      }))
+    );
+    setServingsBase(v);
+  }
+
   // Import depuis marmiton.fr, jow.fr, etc. via l'edge function (JSON-LD schema.org/Recipe).
   async function importFromUrl() {
     if (!importUrl.trim()) return;
@@ -53,6 +69,7 @@ export default function RecipeForm({ recipe, onClose, onSaved }) {
       if (data.image) setImageUrl(data.image);
       if (data.instructions) setInstructions(data.instructions);
       setSourceUrl(importUrl.trim());
+      setServingsBase(data.servings || 2);
       if (data.ingredients?.length) {
         // Association automatique de chaque ingrédient à sa référence CIQUAL
         const labels = data.ingredients.map((t) => t.raw);
@@ -79,7 +96,7 @@ export default function RecipeForm({ recipe, onClose, onSaved }) {
         );
         setMsg({
           ok: true,
-          text: "Recette importée : ingrédients associés à CIQUAL, quantités estimées et allergènes détectés automatiquement. Enregistrez, puis corrigez en édition si besoin.",
+          text: `Recette importée pour ${data.servings || 2} personne(s) : ingrédients, quantités, pièces et allergènes détectés automatiquement. Ajustez le nombre de personnes pour rescaler les quantités.`,
         });
       }
     } catch (e) {
@@ -104,7 +121,7 @@ export default function RecipeForm({ recipe, onClose, onSaved }) {
         utensils: utensils.split(",").map((u) => u.trim()).filter(Boolean),
         allergens,
         source_url: sourceUrl || null,
-        servings_base: 2,
+        servings_base: servingsBase,
       };
       let recipeId = recipe?.id;
       if (editing) {
@@ -186,7 +203,25 @@ export default function RecipeForm({ recipe, onClose, onSaved }) {
           </div>
 
           <div>
-            <label>Ingrédients pour 2 personnes — pièces (optionnel) et grammes</label>
+            <label>Recette pour combien de personnes ? (les quantités se rescalent automatiquement)</label>
+            <span className="serv-ctrl" style={{ fontSize: "0.95rem" }}>
+              <button type="button" onClick={() => changeServings(servingsBase - 1)} aria-label="Moins de personnes">−</button>
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={servingsBase}
+                onChange={(e) => changeServings(e.target.value)}
+                style={{ width: 64, textAlign: "center" }}
+                aria-label="Nombre de personnes"
+              />
+              <button type="button" onClick={() => changeServings(servingsBase + 1)} aria-label="Plus de personnes">+</button>
+              <span className="muted">personne(s)</span>
+            </span>
+          </div>
+
+          <div>
+            <label>Ingrédients pour {servingsBase} personne(s) — pièces (optionnel) et grammes</label>
             {ings.map((ing, i) => (
               <div className="ing-row" key={i}>
                 <div>

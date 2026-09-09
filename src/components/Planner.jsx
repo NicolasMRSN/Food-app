@@ -5,6 +5,7 @@ import { DAY_NAMES, SLOTS, SEASONS, isoDate, currentSeason, CATEGORIES } from ".
 
 const LIB_PER_PAGE = 12;
 const SLOT_PER_PAGE = 8;
+const SLOT_CATS = ["entrée", "plat", "dessert"]; // toujours affichés ; apéritif si présent
 
 function DraggableRecipe({ recipe }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -28,68 +29,94 @@ function DraggableRecipe({ recipe }) {
   );
 }
 
-function Slot({ date, slot, meals, recipesById, onRemove, onServings, onQuickAdd, recipes }) {
-  const id = `${isoDate(date)}|${slot}`;
-  const { setNodeRef, isOver } = useDroppable({ id });
-  const [adding, setAdding] = useState(false);
+function QuickAdd({ recipes, category, onPick, onClose }) {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
-
-  // Liste consultable dès l'ouverture, sans saisie obligatoire
-  const filtered = recipes.filter((r) => !q.trim() || r.name.toLowerCase().includes(q.toLowerCase()));
+  const filtered = recipes.filter(
+    (r) => (!category || r.category === category) && (!q.trim() || r.name.toLowerCase().includes(q.toLowerCase()))
+  );
   const maxPage = Math.max(0, Math.ceil(filtered.length / SLOT_PER_PAGE) - 1);
   const cur = Math.min(page, maxPage);
   const matches = filtered.slice(cur * SLOT_PER_PAGE, (cur + 1) * SLOT_PER_PAGE);
+  return (
+    <div className="autocomplete">
+      <input
+        autoFocus
+        value={q}
+        placeholder={category ? `Filtrer les ${category}s…` : "Filtrer (optionnel)…"}
+        onChange={(e) => { setQ(e.target.value); setPage(0); }}
+        onBlur={() => setTimeout(onClose, 150)}
+        style={{ width: "100%", fontSize: "0.8rem" }}
+      />
+      <div className="suggestions">
+        {matches.map((r) => (
+          <div key={r.id} onMouseDown={() => onPick(r.id)}>
+            {r.name} <span className="sub">{r.category} · {r.season}</span>
+          </div>
+        ))}
+        {matches.length === 0 && <div className="sub" style={{ padding: "0.5rem 0.7rem" }}>Aucune recette.</div>}
+        {filtered.length > SLOT_PER_PAGE && (
+          <div className="pager" onMouseDown={(e) => e.preventDefault()}>
+            <button type="button" disabled={cur === 0} onClick={() => setPage(cur - 1)} aria-label="Page précédente">‹</button>
+            <span>{cur + 1}/{maxPage + 1}</span>
+            <button type="button" disabled={cur === maxPage} onClick={() => setPage(cur + 1)} aria-label="Page suivante">›</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Slot({ date, slot, meals, recipesById, onRemove, onServings, onQuickAdd, recipes }) {
+  const id = `${isoDate(date)}|${slot}`;
+  const { setNodeRef, isOver } = useDroppable({ id });
+  const [adding, setAdding] = useState(null); // null | "" (toutes) | catégorie
+
+  const byCat = {};
+  for (const m of meals) {
+    const r = recipesById[m.recipe_id];
+    if (!r) continue;
+    (byCat[r.category] ||= []).push(m);
+  }
+  const cats = byCat["apéritif"]?.length ? ["apéritif", ...SLOT_CATS] : SLOT_CATS;
 
   return (
     <div ref={setNodeRef} className={`slot ${isOver ? "over" : ""}`}>
       <span className="slot-title">{slot}</span>
-      {meals.map((m) => {
-        const r = recipesById[m.recipe_id];
-        if (!r) return null;
-        return (
-          <div className="meal-chip" key={m.id}>
-            <span className="chip-cat">{r.category}</span>
-            <span>{r.name}</span>
-            <div className="row spread">
-              <span className="serv-ctrl">
-                <button onClick={() => onServings(m, Math.max(1, m.servings - 1))} aria-label="Moins de parts">−</button>
-                {m.servings} pers.
-                <button onClick={() => onServings(m, m.servings + 1)} aria-label="Plus de parts">+</button>
-              </span>
-              <button className="ghost" onClick={() => onRemove(m)} aria-label="Retirer le plat">✕</button>
-            </div>
+      {cats.map((c) => (
+        <div className="cat-row" key={c}>
+          <div className="row spread" style={{ gap: "0.2rem" }}>
+            <span className="cat-label">{c}</span>
+            <button className="ghost cat-add" onClick={() => setAdding(c)} aria-label={`Ajouter ${c}`}>+</button>
           </div>
-        );
-      })}
-      {adding ? (
-        <div className="autocomplete">
-          <input
-            autoFocus
-            value={q}
-            placeholder="Filtrer (optionnel)…"
-            onChange={(e) => { setQ(e.target.value); setPage(0); }}
-            onBlur={() => setTimeout(() => setAdding(false), 150)}
-            style={{ width: "100%", fontSize: "0.8rem" }}
-          />
-          <div className="suggestions">
-            {matches.map((r) => (
-              <div key={r.id} onMouseDown={() => { onQuickAdd(date, slot, r.id); setAdding(false); setQ(""); setPage(0); }}>
-                {r.name} <span className="sub">{r.category} · {r.season}</span>
+          {(byCat[c] || []).map((m) => {
+            const r = recipesById[m.recipe_id];
+            return (
+              <div className="meal-chip" key={m.id}>
+                <span>{r.name}</span>
+                <div className="row spread">
+                  <span className="serv-ctrl">
+                    <button onClick={() => onServings(m, Math.max(1, m.servings - 1))} aria-label="Moins de parts">−</button>
+                    {m.servings} pers.
+                    <button onClick={() => onServings(m, m.servings + 1)} aria-label="Plus de parts">+</button>
+                  </span>
+                  <button className="ghost" onClick={() => onRemove(m)} aria-label="Retirer le plat">✕</button>
+                </div>
               </div>
-            ))}
-            {matches.length === 0 && <div className="sub" style={{ padding: "0.5rem 0.7rem" }}>Aucune recette.</div>}
-            {filtered.length > SLOT_PER_PAGE && (
-              <div className="pager" onMouseDown={(e) => e.preventDefault()}>
-                <button type="button" disabled={cur === 0} onClick={() => setPage(cur - 1)} aria-label="Page précédente">‹</button>
-                <span>{cur + 1}/{maxPage + 1}</span>
-                <button type="button" disabled={cur === maxPage} onClick={() => setPage(cur + 1)} aria-label="Page suivante">›</button>
-              </div>
-            )}
-          </div>
+            );
+          })}
+          {!(byCat[c] || []).length && <span className="cat-empty">—</span>}
         </div>
+      ))}
+      {adding !== null ? (
+        <QuickAdd
+          recipes={recipes}
+          category={adding}
+          onPick={(rid) => { onQuickAdd(date, slot, rid); setAdding(null); }}
+          onClose={() => setAdding(null)}
+        />
       ) : (
-        <button className="ghost" style={{ fontSize: "0.75rem" }} onClick={() => setAdding(true)}>+ ajouter</button>
+        <button className="ghost" style={{ fontSize: "0.72rem" }} onClick={() => setAdding("")}>+ apéritif / autre</button>
       )}
     </div>
   );
@@ -108,7 +135,6 @@ export default function Planner({ weekStart, setWeekStart, recipes, meals, reloa
     [weekStart]
   );
 
-  // Bibliothèque : filtres type + saison + texte, paginée
   const library = recipes.filter(
     (r) =>
       (!libCat || r.category === libCat) &&
@@ -159,7 +185,7 @@ export default function Planner({ weekStart, setWeekStart, recipes, meals, reloa
           <h2>Semaine du {fmt.format(weekStart)}</h2>
           <button onClick={() => shiftWeek(1)} aria-label="Semaine suivante">→</button>
         </div>
-        <span className="muted">Saison en cours : {currentSeason()} · glissez une recette sur un créneau, ou « + ajouter »</span>
+        <span className="muted">Saison : {currentSeason()} · glissez une recette sur un créneau, ou « + » sur une catégorie</span>
       </div>
 
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>

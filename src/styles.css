@@ -56,8 +56,8 @@ label { font-size: 0.8rem; color: var(--ink-soft); display: block; margin-bottom
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.9rem; }
 
 /* Planner */
-.week-grid { display: grid; grid-template-columns: repeat(7, minmax(140px, 1fr)); gap: 0.6rem; margin-top: 1rem; overflow-x: auto; }
-.day-col { display: flex; flex-direction: column; gap: 0.5rem; min-width: 140px; }
+.week-grid { display: grid; grid-template-columns: repeat(7, minmax(172px, 1fr)); gap: 0.6rem; margin-top: 1rem; overflow-x: auto; padding-bottom: 0.4rem; }
+.day-col { display: flex; flex-direction: column; gap: 0.5rem; min-width: 172px; }
 .day-head { text-align: center; font-size: 0.8rem; text-transform: capitalize; color: var(--ink-soft); }
 .day-head strong { display: block; color: var(--ink); font-size: 0.95rem; }
 .slot { background: var(--card); border: 1px dashed var(--line); border-radius: var(--radius); padding: 0.5rem; min-height: 88px; display: flex; flex-direction: column; gap: 0.4rem; }
@@ -136,3 +136,34 @@ table.nutri th:first-child, table.nutri td:first-child { text-align: left; }
 .pager button { padding: 0.2rem 0.6rem; border-radius: 6px; }
 .recipes-grid + .pager, .panel .pager { border-top: none; }
 .suggestions .pager { position: sticky; bottom: 0; background: var(--card); }
+
+/* Créneaux structurés par catégorie (entrée / plat / dessert) */
+.cat-row { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.15rem 0; border-top: 1px dashed var(--line); }
+.cat-row:first-of-type { border-top: none; }
+.cat-label { font-size: 0.64rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--accent); }
+.cat-empty { color: var(--line); font-size: 0.8rem; line-height: 1; }
+.cat-add { padding: 0 0.35rem; font-size: 0.8rem; line-height: 1.2; }
+
+/* Éléments cliquables (nom / image de recette) */
+.clickable { cursor: pointer; }
+.clickable:hover { color: var(--accent); }
+.recipe-card .clickable:hover img { opacity: 0.92; }
+
+/* Jauges nutritionnelles */
+.person-gauges-wrap { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 0.8rem; }
+.person-gauges strong { font-size: 0.9rem; }
+.gauges-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.7rem; margin-top: 0.3rem; }
+.gauge { display: flex; flex-direction: column; gap: 0.15rem; }
+.gauge-head { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--ink-soft); }
+.gauge-val { font-variant-numeric: tabular-nums; font-weight: 600; }
+.gauge-val.ok { color: var(--accent); }
+.gauge-val.low { color: #b08a2e; }
+.gauge-val.over { color: var(--warn); }
+.gauge-track { position: relative; height: 8px; background: var(--line); border-radius: 999px; overflow: hidden; }
+.gauge-band { position: absolute; top: 0; bottom: 0; background: #d9e4d4; }
+.gauge-fill { position: absolute; top: 2px; bottom: 2px; left: 0; border-radius: 999px; }
+.gauge-fill.ok { background: var(--accent); }
+.gauge-fill.low { background: #b08a2e; }
+.gauge-fill.over { background: var(--warn); }
+.gauge-range { font-size: 0.68rem; color: var(--ink-soft); }
+.day-report { margin-top: 0.9rem; }

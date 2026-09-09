@@ -155,12 +155,23 @@ Deno.serve(async (req) => {
     const ingredients = (Array.isArray(recipe.recipeIngredient) ? recipe.recipeIngredient : [])
       .map((r: unknown) => parseIngredient(String(r)));
 
+    // Nombre de personnes déclaré par le site (recipeYield : "4 personnes", 4, ["4", "4 personnes"]…)
+    let servings: number | null = null;
+    const ry = recipe.recipeYield;
+    const yieldStr = Array.isArray(ry) ? ry.map((x) => String(x)).join(" ") : String(ry ?? "");
+    const ym = yieldStr.match(/\d+/);
+    if (ym) {
+      const n = parseInt(ym[0], 10);
+      if (n >= 1 && n <= 50) servings = n;
+    }
+
     return new Response(
       JSON.stringify({
         name: recipe.name ?? null,
         image: typeof image === "string" ? image : null,
         instructions,
         ingredients,
+        servings,
       }),
       { headers: { ...cors, "Content-Type": "application/json" } },
     );

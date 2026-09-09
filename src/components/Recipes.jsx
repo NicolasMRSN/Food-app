@@ -31,7 +31,7 @@ function RecipeDetail({ recipe, foodsByCode, onClose, onEdit }) {
         <p className="muted">
           Par personne : {Math.round(per.kcal)} kcal · P {per.protein.toFixed(1)} g · L {per.fat.toFixed(1)} g · G {per.carb.toFixed(1)} g · Fibres {per.fiber.toFixed(1)} g
         </p>
-        <h3>Ingrédients (2 personnes)</h3>
+        <h3>Ingrédients ({recipe.servings_base || 2} personne{(recipe.servings_base || 2) > 1 ? "s" : ""})</h3>
         <ul>
           {(recipe.recipe_ingredients || []).map((i) => (
             <li key={i.id || i.label}>{i.label} — {i.pieces ? `${i.pieces} pièce${i.pieces > 1 ? "s" : ""} (${i.quantity_g} g)` : `${i.quantity_g} g`}</li>
@@ -100,9 +100,13 @@ export default function Recipes({ recipes, foodsByCode, reload }) {
       <div className="recipes-grid">
         {pageItems.map((r) => (
           <article key={r.id} className="recipe-card">
-            <Thumb recipe={r} />
+              <div className="clickable" onClick={() => setDetail(r)} role="button" tabIndex={0}
+                   onKeyDown={(e) => e.key === "Enter" && setDetail(r)} aria-label={`Consulter ${r.name}`}>
+                <Thumb recipe={r} />
+              </div>
             <div className="body">
-              <strong>{r.name}</strong>
+              <strong className="clickable" onClick={() => setDetail(r)} role="button" tabIndex={0}
+                      onKeyDown={(e) => e.key === "Enter" && setDetail(r)}>{r.name}</strong>
               <div className="badges">
                 <span className="badge">{r.category}</span>
                 <span className="badge season">{r.season}</span>
@@ -141,7 +145,7 @@ export default function Recipes({ recipes, foodsByCode, reload }) {
           recipe={detail}
           foodsByCode={foodsByCode}
           onClose={() => setDetail(null)}
-          onEdit={() => { setForm(detail); }}
+          onEdit={() => { setForm(detail); setDetail(null); }}
         />
       )}
     </div>
