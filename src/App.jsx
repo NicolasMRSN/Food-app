@@ -78,6 +78,31 @@ export default function App() {
     loadMeals();
   }, [session, loadMeals]);
 
+  // Lien dynamique CIQUAL <-> recettes <-> rapport :
+  // toute modification en base (recette, quantités, planning, cibles, référentiel CIQUAL)
+  // est diffusée en temps réel et recharge les données concernées, sur tous les appareils.
+  useEffect(() => {
+    if (!session) return;
+    const ch = supabase
+      .channel("db-sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "recipes" }, loadRecipes)
+      .on("postgres_changes", { event: "*", schema: "public", table: "recipe_ingredients" }, loadRecipes)
+      .on("postgres_changes", { event: "*", schema: "public", table: "ciqual_foods" }, loadRecipes)
+      .on("postgres_changes", { event: "*", schema: "public", table: "planned_meals" }, loadMeals)
+      .on("postgres_changes", { event: "*", schema: "public", table: "people" }, loadSettings)
+      .on("postgres_changes", { event: "*", schema: "public", table: "app_settings" }, loadSettings)
+      .subscribe();
+    const refreshAll = () => { loadRecipes(); loadMeals(); loadSettings(); };
+    const onVisible = () => { if (!document.hidden) refreshAll(); };
+    window.addEventListener("focus", refreshAll);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      supabase.removeChannel(ch);
+      window.removeEventListener("focus", refreshAll);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [session, loadRecipes, loadMeals, loadSettings]);
+
   if (session === undefined) return null;
   if (!session) return <Auth />;
 

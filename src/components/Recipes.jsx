@@ -142,7 +142,7 @@ export default function Recipes({ recipes, foodsByCode, reload }) {
       )}
       {detail && (
         <RecipeDetail
-          recipe={detail}
+          recipe={recipes.find((r) => r.id === detail.id) || detail}
           foodsByCode={foodsByCode}
           onClose={() => setDetail(null)}
           onEdit={() => { setForm(detail); setDetail(null); }}

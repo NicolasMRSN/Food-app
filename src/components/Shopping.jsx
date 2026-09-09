@@ -29,10 +29,21 @@ export default function Shopping({ weekStart, recipes, meals, foodsByCode }) {
   }, [meals, recipesById, foodsByCode]);
 
   useEffect(() => {
-    (async () => {
+    async function loadChecks() {
       const { data } = await supabase.from("shopping_checks").select("*").eq("week_start", week);
       setChecks(Object.fromEntries((data || []).map((c) => [c.ciqual_code, c.checked])));
-    })();
+    }
+    loadChecks();
+    // Synchronisation temps réel des coches entre appareils
+    const ch = supabase
+      .channel(`checks-${week}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "shopping_checks", filter: `week_start=eq.${week}` },
+        loadChecks
+      )
+      .subscribe();
+    return () => supabase.removeChannel(ch);
   }, [week]);
 
   async function toggle(item) {
