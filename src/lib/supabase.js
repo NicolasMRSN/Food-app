@@ -1,9 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 
-const url = import.meta.env.VITE_SUPABASE_URL || "https://dwykymlfseilwzcrpbbj.supabase.co";
-const key =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  "sb_publishable_foyFRXgHi7_bRiO9L6QbiQ_2FC-7rTp";
+// Supabase auto-hébergé sur le homelab : les API sont servies sur la même origine que l'app
+// (nginx proxifie /auth, /rest, /realtime, /functions). VITE_SUPABASE_URL permet de viser une autre instance (dev).
+const url = import.meta.env.VITE_SUPABASE_URL || window.location.origin;
+const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Session persistante par défaut (localStorage) : connexion durable pour Nicolas & Marion.
 export const supabase = createClient(url, key, {

@@ -1,6 +1,8 @@
 # Table — Nicolas & Marion
 
-Application privée de planification des repas, construite avec **React (Vite)** et **Supabase**.
+Application privée de planification des repas, construite avec **React (Vite)** et **Supabase**,
+auto-hébergée sur le homelab (Docker) et accessible uniquement via Tailscale :
+**https://homelab-marsan.tail4c6e30.ts.net:8443**
 
 ## Fonctionnalités
 - **Semaine** : planification midi/soir sur 7 jours par glisser-déposer ou autocomplétion, sans obligation de remplir chaque jour ; nombre illimité d'apéritifs, entrées, plats et desserts par repas ; portions modulables (base 2 personnes, incrémentables pour les invités).
@@ -9,19 +11,36 @@ Application privée de planification des repas, construite avec **React (Vite)**
 - **Courses** : liste générée depuis la semaine planifiée, quantités agrégées et mises à l'échelle des portions, classée par rayon de supermarché, cases à cocher persistantes.
 - **Accès** : réservé à 2 comptes (verrou en base sur `auth.users`), session persistante.
 
-## Démarrage
+## Développement
 ```bash
 npm install
-cp .env.example .env   # renseigner l'URL et la clé publique Supabase
+cp .env.example .env   # renseigner la clé publique (ANON_KEY du serveur)
 npm run dev
 ```
 
+## Hébergement (homelab)
+Tout tourne en Docker dans `/srv/docker/food-app` sur `homelab-marsan`, relancé automatiquement au démarrage
+(`homelab-stacks.service`). Fichiers dans [`deploy/homelab/`](deploy/homelab/).
+
+| Élément | Détail |
+|---|---|
+| Front `food-web` | nginx : sert l'app et proxifie `/auth`, `/rest`, `/realtime`, `/functions` vers la passerelle Supabase (même origine) |
+| Supabase self-hosted | `supabase-db` (Postgres 17), `supabase-auth`, `supabase-rest`, `realtime-dev.supabase-realtime`, `supabase-edge-functions`, `supabase-envoy`, `supabase-meta`, `supabase-studio` |
+| Accès | Tailscale Serve, tailnet uniquement : app sur le port **8443**, Supabase Studio sur le port **10000** (utilisateur `nicolas`, mot de passe `DASHBOARD_PASSWORD` dans `.env`) |
+| Secrets | `/srv/docker/food-app/.env` (généré à l'installation, jamais commité) |
+
+- **Installation** (serveur neuf) : `bash deploy/homelab/install.sh`
+- **Mise à jour** après un push : `bash /srv/docker/food-app/app-src/deploy/homelab/update.sh`
+  (pull, nouvelles migrations, Edge Functions, rebuild du front)
+- **Migrations** : appliquées par `deploy/homelab/migrate.sh`, suivies dans `food_meta.applied_migrations`
+
 ## Base de données
-- Migrations : `supabase/migrations/`
+- Migrations : `supabase/migrations/` (une nouvelle migration = un nouveau fichier `00NN_nom.sql`, appliqué par `update.sh`)
 - Fonction d'import de recettes : `supabase/functions/import-recipe/`
 - Référentiel CIQUAL : `data/ciqual_foods.json` (3 311 aliments — table projet CIQUAL 2025 en priorité, complétée par la table officielle ANSES pour les groupes manquants), chargé dans `public.ciqual_foods`.
 
 ## Sécurité
 - RLS activé sur toutes les tables : lecture/écriture réservées aux utilisateurs authentifiés.
-- Inscriptions bloquées au-delà de 2 comptes.
-- La clé « publishable » Supabase est publique par conception ; les données restent protégées par RLS.
+- Un seul compte commun : inscriptions désactivées côté Auth (`DISABLE_SIGNUP=true`) et verrou en base sur `auth.users`.
+- La clé « anon » est publique par conception (incluse dans le front) ; les données restent protégées par RLS.
+- Aucun port exposé sur Internet : services liés à `127.0.0.1`, publiés uniquement sur le tailnet.
