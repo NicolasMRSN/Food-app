@@ -32,6 +32,7 @@ Tout tourne en Docker dans `/srv/docker/food-app` sur `homelab-marsan`, relancé
 - **Installation** (serveur neuf) : `bash deploy/homelab/install.sh`
 - **Mise à jour** après un push : `bash /srv/docker/food-app/app-src/deploy/homelab/update.sh`
   (pull, nouvelles migrations, Edge Functions, rebuild du front)
+- **Mot de passe oublié** : `bash /srv/docker/food-app/app-src/deploy/homelab/reset-password.sh` (saisie au clavier, pas d'e-mail)
 - **Migrations** : appliquées par `deploy/homelab/migrate.sh`, suivies dans `food_meta.applied_migrations`
 
 ## Base de données
