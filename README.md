@@ -1,8 +1,8 @@
 # Table — Nicolas & Marion
 
 Application privée de planification des repas, construite avec **React (Vite)** et **Supabase**,
-auto-hébergée sur le homelab (Docker) et accessible uniquement via Tailscale :
-**https://homelab-marsan.tail4c6e30.ts.net:8443**
+auto-hébergée sur le homelab (Docker) et accessible depuis le réseau local de la maison :
+**http://192.168.1.192:8081**
 
 ## Fonctionnalités
 - **Semaine** : planification midi/soir sur 7 jours par glisser-déposer ou autocomplétion, sans obligation de remplir chaque jour ; nombre illimité d'apéritifs, entrées, plats et desserts par repas ; portions modulables (base 2 personnes, incrémentables pour les invités).
@@ -26,7 +26,7 @@ Tout tourne en Docker dans `/srv/docker/food-app` sur `homelab-marsan`, relancé
 |---|---|
 | Front `food-web` | nginx : sert l'app et proxifie `/auth`, `/rest`, `/realtime`, `/functions` vers la passerelle Supabase (même origine) |
 | Supabase self-hosted | `supabase-db` (Postgres 17), `supabase-auth`, `supabase-rest`, `realtime-dev.supabase-realtime`, `supabase-edge-functions`, `supabase-envoy`, `supabase-meta`, `supabase-studio` |
-| Accès | Tailscale Serve, tailnet uniquement : app sur le port **8443**, Supabase Studio sur le port **10000** (utilisateur `nicolas`, mot de passe `DASHBOARD_PASSWORD` dans `.env`) |
+| Accès | Réseau local uniquement, sur l'IP du serveur : app sur le port **8081**, Supabase Studio sur le port **8000** (utilisateur `nicolas`, mot de passe `DASHBOARD_PASSWORD` dans `.env`). `LAN_IP` et les URL du `.env` sont mises à jour au démarrage par `homelab-reseau.sh` si la box change |
 | Secrets | `/srv/docker/food-app/.env` (généré à l'installation, jamais commité) |
 
 - **Installation** (serveur neuf) : `bash deploy/homelab/install.sh`
@@ -44,4 +44,5 @@ Tout tourne en Docker dans `/srv/docker/food-app` sur `homelab-marsan`, relancé
 - RLS activé sur toutes les tables : lecture/écriture réservées aux utilisateurs authentifiés.
 - Un seul compte commun : inscriptions désactivées côté Auth (`DISABLE_SIGNUP=true`) et verrou en base sur `auth.users`.
 - La clé « anon » est publique par conception (incluse dans le front) ; les données restent protégées par RLS.
-- Aucun port exposé sur Internet : services liés à `127.0.0.1`, publiés uniquement sur le tailnet.
+- Aucun port exposé sur Internet : services liés à l'IP locale du serveur, joignables uniquement depuis la maison.
+- Trafic en HTTP simple sur le réseau local (pas de HTTPS) : à n'utiliser que sur un Wi-Fi de confiance.

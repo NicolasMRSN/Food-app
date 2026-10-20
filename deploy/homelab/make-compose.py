@@ -23,7 +23,8 @@ src["services"]["food-web"] = {
     "image": "food-web:local",
     "restart": "unless-stopped",
     "depends_on": {"api-gw": {"condition": "service_healthy"}},
-    "ports": ["127.0.0.1:8081:80"],
+    # Réseau local uniquement : LAN_IP (dans .env) est tenu à jour par homelab-reseau.sh
+    "ports": ["${LAN_IP}:8081:80"],
 }
 
 with open("compose.yaml", "w") as f:
